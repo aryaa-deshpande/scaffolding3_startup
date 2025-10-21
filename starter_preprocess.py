@@ -118,20 +118,44 @@ class TextPreprocessor:
     
     def fetch_from_url(self, url: str) -> str:
         """
-        TODO: Fetch text content from a URL (especially Project Gutenberg)
-        
+        Fetch text content from a URL (especially Project Gutenberg)
+
         Args:
             url: URL to a .txt file
-            
+
         Returns:
-            Raw text content
-            
+            Raw text content (decoded string)
+
         Raises:
-            Exception if URL is invalid or cannot be reached
+            ValueError: if URL is invalid or not a .txt resource
+            requests.RequestException: if the request fails
         """
-        # Hint: Use requests.get() and validate that it's a .txt URL
-        # Don't forget error handling!
-        raise NotImplementedError("Implement this for Part 2 of the assignment")
+        if not isinstance(url, str) or not url.startswith(("http://", "https://")):
+            raise ValueError("URL must start with http:// or https://")
+
+        # Be strict about .txt unless server clearly says it's plain text
+        looks_like_txt = url.lower().endswith(".txt")
+
+        try:
+            resp = requests.get(url, timeout=20)
+            resp.raise_for_status()
+        except requests.RequestException as e:
+            # Surface a concise error to the API/CLI
+            raise requests.RequestException(f"Failed to fetch URL: {e}") from e
+
+        content_type = resp.headers.get("Content-Type", "").lower()
+        is_plain_text = "text/plain" in content_type
+
+        if not (looks_like_txt or is_plain_text):
+            raise ValueError("URL must point to a plain text (.txt) resource")
+
+        # Use server-provided encoding when possible, fall back to detected
+        if not resp.encoding:
+            # requests exposes chardet/charset-normalizer via apparent_encoding
+            resp.encoding = resp.apparent_encoding or "utf-8"
+
+        return resp.text
+    
     
     def get_text_statistics(self, text: str) -> Dict:
         """
