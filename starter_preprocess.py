@@ -159,18 +159,45 @@ class TextPreprocessor:
     
     def get_text_statistics(self, text: str) -> Dict:
         """
-        TODO: Calculate basic statistics about the text
-        
+        Calculate basic statistics about the text.
+
         Returns dictionary with:
             - total_characters
-            - total_words  
+            - total_words
             - total_sentences
             - avg_word_length
-            - avg_sentence_length
-            - most_common_words (top 10)
+            - avg_sentence_length  (in words)
+            - most_common_words (top 10, [(word, count), ...])
         """
-        # Hint: Use the existing tokenize methods and Counter
-        raise NotImplementedError("Implement this for Part 2 of the assignment")
+        if not isinstance(text, str):
+            raise ValueError("text must be a string")
+
+        # Normalize once so splitting is consistent (keep sentence markers)
+        norm = self.normalize_text(text, preserve_sentences=True)
+
+        sentences = self.tokenize_sentences(norm)
+        words = self.tokenize_words(norm)
+
+        total_characters = len(norm)
+        total_words = len(words)
+        total_sentences = len(sentences)
+
+        avg_word_length = (sum(len(w) for w in words) / total_words) if total_words else 0.0
+
+        sentence_lengths = self.get_sentence_lengths(sentences)  # words per sentence
+        avg_sentence_length = (sum(sentence_lengths) / total_sentences) if total_sentences else 0.0
+
+        # Top 10 most common words (no stopword removal per assignment)
+        most_common_words = Counter(words).most_common(10)
+
+        return {
+            "total_characters": total_characters,
+            "total_words": total_words,
+            "total_sentences": total_sentences,
+            "avg_word_length": round(avg_word_length, 3),
+            "avg_sentence_length": round(avg_sentence_length, 3),
+            "most_common_words": most_common_words
+        }
     
     def create_summary(self, text: str, num_sentences: int = 3) -> str:
         """
