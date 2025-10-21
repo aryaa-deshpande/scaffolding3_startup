@@ -54,31 +54,32 @@ class TextPreprocessor:
     def normalize_text(self, text: str, preserve_sentences: bool = True) -> str:
         """
         Normalize text while preserving sentence boundaries
-        
+
         Args:
             text: Input text
             preserve_sentences: If True, keeps . ! ? for sentence detection
         """
-        # Convert to lowercase
+        # Lowercase
         text = text.lower()
-        
-        # Standardize quotes and dashes
-        text = re.sub(r'[""]', '"', text)
-        text = re.sub(r'['']', "'", text)
-        text = re.sub(r'—|–', '-', text)
-        
+
+        # Normalize curly quotes and dashes to ASCII
+        # “ ” -> "
+        text = re.sub(r'[“”]', '"', text)
+        # ‘ ’ -> '
+        text = re.sub(r"[’‘]", "'", text)
+        # em/en dashes -> -
+        text = re.sub(r"[—–]", "-", text)
+
         if preserve_sentences:
-            # Keep sentence endings but remove other punctuation
-            # This regex keeps . ! ? but removes , ; : etc
-            text = re.sub(r'[^\w\s.!?\'-]', ' ', text)
+            # Keep . ! ? ' - ; remove other punctuation/symbols
+            text = re.sub(r"[^\w\s\.\!\?\'\-]", " ", text)
         else:
-            # Remove all punctuation except apostrophes in contractions
-            text = re.sub(r"(?<!\w)'(?!\w)|[^\w\s]", ' ', text)
-        
-        # Clean up whitespace
-        text = re.sub(r'\s+', ' ', text)
-        
-        return text.strip()
+            # Remove punctuation except apostrophes inside contractions
+            text = re.sub(r"(?<!\w)'(?!\w)|[^\w\s]", " ", text)
+
+        # Collapse whitespace
+        text = re.sub(r"\s+", " ", text).strip()
+        return text
     
     def tokenize_sentences(self, text: str) -> List[str]:
         """Split text into sentences"""
@@ -331,3 +332,25 @@ if __name__ == "__main__":
     
     print("\n✅ Basic functionality working!")
     print("Now implement the TODO methods for your assignment!")
+
+    # Test new methods
+    print("\n== Testing new methods ==")
+    try:
+        url = "https://www.gutenberg.org/files/1342/1342-0.txt" 
+        print(f"Fetching from {url} ...")
+        raw_text = preprocessor.fetch_from_url(url)
+        print(f"Fetched {len(raw_text)} characters successfully.\n")
+
+        cleaned = preprocessor.clean_gutenberg_text(raw_text)
+        print(f"Cleaned length: {len(cleaned)} characters\n")
+
+        stats = preprocessor.get_text_statistics(cleaned)
+        print("Text statistics:")
+        for key, value in stats.items():
+            print(f"  {key}: {value}")
+
+        summary = preprocessor.create_summary(cleaned, num_sentences=3)
+        print("\nSummary preview:")
+        print(summary[:500], "...")
+    except Exception as e:
+        print(f"❌ Error during test: {e}")
