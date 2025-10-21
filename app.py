@@ -27,79 +27,48 @@ def health_check():
 
 @app.route('/api/clean', methods=['POST'])
 def clean_text():
-    """
-    TODO: Implement this endpoint for Part 3
-    
-    API endpoint that accepts a URL and returns cleaned text
-    
-    Expected JSON input:
-        {"url": "https://www.gutenberg.org/files/1342/1342-0.txt"}
-    
-    Returns JSON:
-        {
-            "success": true/false,
-            "cleaned_text": "...",
-            "statistics": {...},
-            "summary": "...",
-            "error": "..." (if applicable)
-        }
-    """
     try:
-        # TODO: Get JSON data from request
-        # TODO: Extract URL from the JSON
-        # TODO: Validate URL (should be .txt)
-        # TODO: Use preprocessor.fetch_from_url() 
-        # TODO: Clean the text with preprocessor.clean_gutenberg_text()
-        # TODO: Normalize with preprocessor.normalize_text()
-        # TODO: Get statistics with preprocessor.get_text_statistics()
-        # TODO: Create summary with preprocessor.create_summary()
-        # TODO: Return JSON response
-        
+        data = request.get_json(force=True, silent=True) or {}
+        url = (data.get("url") or "").strip()
+        if not url:
+            return jsonify({"success": False, "error": "Missing 'url' in JSON body."}), 400
+
+        raw = preprocessor.fetch_from_url(url)
+        cleaned_core = preprocessor.clean_gutenberg_text(raw)
+
+        stats = preprocessor.get_text_statistics(cleaned_core)
+        summary = preprocessor.create_summary(cleaned_core, num_sentences=3)
+
         return jsonify({
-            "success": False,
-            "error": "Not implemented yet - complete this for Part 3!"
-        }), 501
-        
+            "success": True,
+            "cleaned_text": cleaned_core[:2000],  # short preview
+            "statistics": stats,
+            "summary": summary,
+            "error": None
+        }), 200
+
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "error": f"Server error: {str(e)}"
-        }), 500
+        app.logger.exception(e)
+        return jsonify({"success": False, "error": str(e)}), 500
+    
 
 @app.route('/api/analyze', methods=['POST'])
 def analyze_text():
-    """
-    TODO: Implement this endpoint for Part 3
-    
-    API endpoint that accepts raw text and returns statistics only
-    
-    Expected JSON input:
-        {"text": "Your raw text here..."}
-    
-    Returns JSON:
-        {
-            "success": true/false,
-            "statistics": {...},
-            "error": "..." (if applicable)
-        }
-    """
     try:
-        # TODO: Get JSON data from request
-        # TODO: Extract text from the JSON
-        # TODO: Get statistics with preprocessor.get_text_statistics()
-        # TODO: Return JSON response
-        
-        return jsonify({
-            "success": False,
-            "error": "Not implemented yet - complete this for Part 3!"
-        }), 501
-        
-    except Exception as e:
-        return jsonify({
-            "success": False,
-            "error": f"Server error: {str(e)}"
-        }), 500
+        data = request.get_json(force=True, silent=True) or {}
+        text = data.get("text")
+        if not isinstance(text, str) or not text.strip():
+            return jsonify({"success": False, "error": "Missing non-empty 'text' in JSON body."}), 400
 
+        stats = preprocessor.get_text_statistics(text)
+        summary = preprocessor.create_summary(text, num_sentences=3)
+
+        return jsonify({"success": True, "statistics": stats, "summary": summary, "error": None}), 200
+
+    except Exception as e:
+        app.logger.exception(e)
+        return jsonify({"success": False, "error": str(e)}), 500
+    
 # Error handlers
 @app.errorhandler(404)
 def not_found(error):
