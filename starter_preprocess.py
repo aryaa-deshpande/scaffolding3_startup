@@ -201,17 +201,30 @@ class TextPreprocessor:
     
     def create_summary(self, text: str, num_sentences: int = 3) -> str:
         """
-        TODO: Create a simple extractive summary by returning the first N sentences
-        
+        Create a simple extractive summary by returning the first N sentences.
+
         Args:
-            text: Cleaned text
+            text: Cleaned (ideally Gutenberg-trimmed) text
             num_sentences: Number of sentences to include
-            
+
         Returns:
-            Summary string
+            Summary string (sentences joined with '. ')
         """
-        # Hint: Use tokenize_sentences() and join the first N sentences
-        raise NotImplementedError("Implement this for Part 2 of the assignment")
+        if num_sentences <= 0:
+            return ""
+
+        norm = self.normalize_text(text, preserve_sentences=True)
+        sentences = self.tokenize_sentences(norm)
+
+        if not sentences:
+            return ""
+
+        summary_sents = sentences[:num_sentences]
+        # tokenization strips terminal punctuation; add a period between for readability
+        summary = ". ".join(summary_sents)
+        if not summary.endswith("."):
+            summary += "."
+        return summary
 
 
 class FrequencyAnalyzer:
